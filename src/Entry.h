@@ -4,7 +4,11 @@
 #include "PrebufferedStreambuf.h"
 
 #include <string>
+#include <ostream>
 #include <pthread.h>
+
+using std::string;
+using std::ostream;
 
 struct Entry {
     time_t m_stamp;
@@ -76,6 +80,10 @@ struct Entry {
 
     size_t size() const {
         return m_streambuf.size();
+    }
+
+    size_t snprintf(char *buf,size_t buflen) const {
+        return m_streambuf.snprintf(buf,buflen);
     }
 };
 

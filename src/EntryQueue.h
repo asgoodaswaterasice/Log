@@ -7,6 +7,10 @@ struct EntryQueue {
   int m_len;
   struct Entry *m_head, *m_tail;
 
+  int size() {
+      return m_len;
+  }
+
   bool empty() const {
     return m_len == 0;
   }
