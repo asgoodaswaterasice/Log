@@ -131,8 +131,10 @@ void Log::_flush(EntryQueue *q) {
                 buf = buf0;
             }
             buflen += e->m_stamp.sprintf(buf + buflen,bufsize);
-            buflen += sprintf(buf + buflen," %lx %2d %2d ",
-                    e->m_thread,e->m_prio,e->m_subsys);
+            buflen += sprintf(buf + buflen," %lx %2d ",
+                    e->m_thread,e->m_prio);
+            buflen += sprintf(buf + buflen,"%s ",
+                    m_subsys_map->get_name(e->m_subsys).c_str());
             buflen += e->snprintf(buf + buflen,bufsize - buflen - 1);
 
             if (buflen > bufsize - 1) {
