@@ -1,5 +1,8 @@
 #include "Log.h"
 #include <unistd.h>
+#include <iostream>
+
+using namespace std;
 
 int main(int argc,char **argv)
 {
@@ -8,19 +11,21 @@ int main(int argc,char **argv)
 
     Log log(&sysmap);
 
-    log.set_stderr_log(2,2);
+    log.set_stderr_log(2,-1);
+    log.set_log_file("xx.log");
+    log.reopen_log_file();
 
     log.start();
 
+    size_t expected_size = 0;
     int count = 0;
 
-    while (count++ < 1000) {
-        Entry* e1 = log.create_entry(1,0);
+
+    while (count++ < 10000) {
+        Entry* e1 = log.create_entry(1,0,&expected_size);
 
         e1->set_str("hello log!");
         log.submit_entry(e1);
-
-        sleep(1);
     }
 
     log.stop();

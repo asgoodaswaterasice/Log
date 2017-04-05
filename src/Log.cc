@@ -1,6 +1,7 @@
 #include "Log.h"
 
 #include <sys/types.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -73,7 +74,7 @@ void Log::reopen_log_file() {
 
     if (m_log_file.size()) {
         m_fd = open(m_log_file.c_str(),O_CREAT|O_WRONLY|O_APPEND,0644);
-        assert(m_fd < 0);
+        assert(m_fd >= 0);
     } else {
         m_fd = -1;
     }
@@ -129,9 +130,7 @@ void Log::_flush(EntryQueue *q) {
             } else {
                 buf = buf0;
             }
-            char *time_stamp = ctime(&(e->m_stamp));
-            time_stamp[strlen(time_stamp) - 1] = '\0';
-            buflen += sprintf(buf + buflen,"%s",time_stamp);
+            buflen += e->m_stamp.sprintf(buf + buflen,bufsize);
             buflen += sprintf(buf + buflen," %lx %2d %2d ",
                     e->m_thread,e->m_prio,e->m_subsys);
             buflen += e->snprintf(buf + buflen,bufsize - buflen - 1);
@@ -147,8 +146,18 @@ void Log::_flush(EntryQueue *q) {
 
             if (do_fd) {
                 buf[buflen] = '\n';
-                int r = write(m_fd,buf,buflen + 1);
-                assert(r != (buflen + 1));
+                size_t count = buflen + 1;
+                while(count) {
+                    int r = write(m_fd,buf,count);
+                    if (r < 0) {
+                        if (r == EINTR) {
+                            continue;
+                        }
+                        // write error
+                        break;
+                    }
+                    count -= r;
+                }
             }
             if (need_dynamic) {
                 delete[] buf;
@@ -159,13 +168,15 @@ void Log::_flush(EntryQueue *q) {
 }
 
 Entry* Log::create_entry(int level,int sub) {
-    return new Entry(time(NULL),pthread_self(),level,sub);
+    timestamp_t ns = timestamp_t::now();
+    return new Entry(ns,pthread_self(),level,sub);
 }
 
 Entry* Log::create_entry(int level,int sub,size_t *expected_size) {
+    timestamp_t ns = timestamp_t::now();
     size_t size = __atomic_load_n(expected_size,__ATOMIC_RELAXED);
     void *ptr = operator new(sizeof(Entry) + size);
-    return new(ptr) Entry(time(NULL),pthread_self(),level,sub,
+    return new(ptr) Entry(ns,pthread_self(),level,sub,
             reinterpret_cast<char*>(ptr) + sizeof(Entry),size,expected_size);
 }
 

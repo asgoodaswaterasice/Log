@@ -1,6 +1,7 @@
 #ifndef LOG_ENTRY_H
 #define LOG_ENTRY_H
 
+#include "TimeStamp.h"
 #include "PrebufferedStreambuf.h"
 
 #include <string>
@@ -11,7 +12,7 @@ using std::string;
 using std::ostream;
 
 struct Entry {
-    time_t m_stamp;
+    timestamp_t m_stamp;
     pthread_t m_thread;
     short m_prio, m_subsys;
     Entry *m_next;
@@ -28,7 +29,7 @@ struct Entry {
           m_exp_len(NULL)
     {}
 
-    Entry(time_t s,pthread_t thread,short pr,short sub,
+    Entry(timestamp_t &s,pthread_t thread,short pr,short sub,
     const char *msg = NULL)
         : m_stamp(s), m_thread(thread), m_prio(pr), m_subsys(sub),
           m_next(NULL),
@@ -42,7 +43,7 @@ struct Entry {
         }
     }
 
-    Entry(time_t s,pthread_t thread,short pr,short sub,
+    Entry(timestamp_t &s,pthread_t thread,short pr,short sub,
     char *buf,size_t buf_len,size_t *exp_len,const char *msg = NULL)
         : m_stamp(s), m_thread(thread), m_prio(pr), m_subsys(sub),
           m_next(NULL),
