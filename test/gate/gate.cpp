@@ -88,8 +88,22 @@ class GateServer
             }
         }
 
+        static int Connect2Udatabase(GateServer* instance) {
+            struct sockaddr_in udb_addr;
+            memset(&udb_addr,0,sizeof(udb_addr));
+            udb_addr.sin_family = AF_INET;
+            udb_addr.sin_port = htons(888);
+            udb_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+            udbBev_ = bufferevent_socket_new(instance->base_, -1, BEV_OPT_CLOSE_ON_FREE);
+            bufferevent_setcb(udbBev_, udb_read_cb, NULL, udb_event_cb, (void*)instance);
+            bufferevent_enable(chunk_bev, EV_READ | EV_WRITE | EV_PERSIST);
 
-        static int Connect2Chunk(uint32_t connId, GateServer * instance) {
+
+
+        
+        }
+
+        static int Connect2Chunk(uint32_t connId, GateServer* instance) {
             struct sockaddr_in server_addr;
             memset(&server_addr,0,sizeof(server_addr));
             server_addr.sin_family = AF_INET;
@@ -157,6 +171,7 @@ class GateServer
 
         struct event_base* base_;
         struct bufferevent* qemuBev_;
+        struct bufferevent* udatabaseBev_;
         std::map<uint32_t, struct bufferevent*> chunkConnId2Bev_; //port 到 chunk connection bufferevent 的map
         std::map<struct bufferevent*, uint32_t> chunkBev2ConnId_; //chunk connection bufferevent 到 port 的map
 
@@ -165,6 +180,7 @@ class GateServer
 
 int main(int argc, char** argv)
 {
+    
     GateServer server;
     server.Init();
     server.Start();
