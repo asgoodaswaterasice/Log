@@ -1,15 +1,7 @@
 #include "message_util.h"
 #include "evbuffer_zero_copy_stream.h"
 
-MessageHandle_t g_MessageHandle;
-
-MessageUtil::MessageUtil() {
-}
-
-MessageUtil::~MessageUtil() {
-}
-
-unsigned MessageUtil::Flowno() {
+unsigned  Flowno() {
     static unsigned _flow_no = 1024;
     unsigned ret = _flow_no++;
     if ( _flow_no == 1024 ) {
@@ -18,9 +10,9 @@ unsigned MessageUtil::Flowno() {
     return ret;
 }
 
-int MessageUtil::SendMessageToBEV(struct bufferevent *bev) {
+int SendMessageToBEV(const ::google::protobuf::Message &sMessage, struct bufferevent *bev) {
     evbufferZeroCopyOutputStream ostream;
-    Um.SerializeToZeroCopyStream(&ostream);
+    sMessage.SerializeToZeroCopyStream(&ostream);
     unsigned size = evbuffer_get_length(ostream.buffer());
     size = htonl(size);
     bufferevent_lock(bev);

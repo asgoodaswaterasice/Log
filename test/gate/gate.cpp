@@ -11,6 +11,8 @@
 #include<event2/buffer.h>
 #include<event2/util.h>
 #include<map>
+#include "manager_thread.h"
+#include "heartbeat_to_master.h"
 
 using namespace std;
 
@@ -18,7 +20,7 @@ using namespace std;
 class GateServer
 {
 public:
-    GateServer()
+    GateServer():qemuBev_(NULL), udbBev_(NULL)
     {
     }
     void Init() {
@@ -44,6 +46,7 @@ public:
         struct event* ev_listen = event_new(base_, listener, EV_READ | EV_PERSIST, accept_cb, this);
         event_add(ev_listen, NULL);
         Connect2Udatabase(this); //初始化到udatabase的连接
+    
     }
     void Start() {
         event_base_dispatch(base_);
@@ -94,10 +97,17 @@ private:
         memset(&udb_addr,0,sizeof(udb_addr));
         udb_addr.sin_family = AF_INET;
         udb_addr.sin_port = htons(2012);
-        udb_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        udb_addr.sin_addr.s_addr = inet_addr("192.168.150.35");
         instance->udbBev_ = bufferevent_socket_new(instance->base_, -1, BEV_OPT_CLOSE_ON_FREE);
         bufferevent_setcb(instance->udbBev_, udb_read_cb, NULL, udb_event_cb, (void*)instance);
         bufferevent_enable(instance->udbBev_, EV_READ | EV_WRITE | EV_PERSIST);
+        if (bufferevent_socket_connect(instance->udbBev_, (struct sockaddr*)&udb_addr,sizeof(udb_addr)) < 0) {
+            bufferevent_free(instance->udbBev_);
+            cerr << "connect udatabase error" << endl;
+            return -1;
+        }
+        cout << "connecting to udatabase..." << endl;
+        return 0;
     }
     static void udb_read_cb(struct bufferevent* bev, void* arg) {
         GateServer* instance = (GateServer*)arg;
@@ -110,10 +120,10 @@ private:
         if (event & BEV_EVENT_CONNECTED) {
             cout << "connect to udb success" << endl;
         } else {
-            cout << "udb disconnected";
+            cout << "udb disconnected" << endl;
             bufferevent_free(instance->udbBev_); // 释放bev， 会关闭连接
             instance->udbBev_ = NULL;
-            Connect2Udatabase(instance); // 重新连接 udatabase
+            Connect2Udatabase(instance); // 重新连接 udatabase,这里需要优化，防止持续重连
         }
     }
 
@@ -196,6 +206,11 @@ int main(int argc, char** argv)
 {
 
     GateServer server;
+    ManagerThread* manager = ManagerThread::GetInstance();
+    heartbeatInit(manager);
+    manager->Init();
+    manager->Start();
+
     server.Init();
     server.Start();
     return 0;

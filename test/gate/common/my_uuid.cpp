@@ -1,7 +1,8 @@
 #include "my_uuid.h"
-
 #include <string.h>
 #include <assert.h>
+
+using namespace std;
 
 MyUuid::MyUuid() {
 	uuid_generate(m_szUuid);
@@ -42,13 +43,6 @@ MyUuid &MyUuid::operator=(const uuid_t &sOther) {
 
 bool MyUuid::operator<(const MyUuid &sCmp) const {
 	return uuid_compare(m_szUuid, sCmp.m_szUuid);
-}
-
-MyUuid::~MyUuid() {
-}
-
-void MyUuid::Dump(int iFD) {
-	DUMP_VALUE("%s", m_szUuidStr, iFD);
 }
 
 string MyUuid::NewUuid() {

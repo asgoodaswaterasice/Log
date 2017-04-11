@@ -1,13 +1,13 @@
 #ifndef __MY_UUID_H_
 #define __MY_UUID_H_
 
-#include "object.h"
+#include<string>
 #include <uuid/uuid.h>
 
-class MyUuid : public Object {
+class MyUuid {
 public:
-	DEFAULT_MEMBER(MyUuid);
 
+	MyUuid();
 	MyUuid(uuid_t sUuid);
 	MyUuid(const char *pString, unsigned iSize);
 
@@ -25,7 +25,7 @@ public:
 		return m_szUuidStr;
 	}
 
-    static string NewUuid();
+    static std::string NewUuid();
 protected:
 	uuid_t m_szUuid;
 	char m_szUuidStr[37];
