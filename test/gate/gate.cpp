@@ -2,50 +2,25 @@
 using namespace std;
 
 
-UDiskIO::UDiskIO():qemuBev_(NULL), udbBev_(NULL)
+UDiskIO::UDiskIO(): qemuBev_(NULL), udbBev_(NULL)
 {
 }
 void UDiskIO::Init() {
     base_ = event_base_new();
-    int res;
-    int listener;
-    listener = ::socket(AF_UNIX, SOCK_STREAM, 0);
-    assert( listener != -1 );
-    evutil_make_socket_nonblocking(listener);
-    //允许多次绑定同一个地址。要用在socket和bind之间
-    evutil_make_listen_socket_reuseable(listener);
-    unlink("/home/yeheng/unix_socket");
-    struct sockaddr_un un;
-    memset(&un, 0, sizeof(un));
-    un.sun_family = AF_UNIX;
-    strncpy(un.sun_path, "/home/yeheng/unix_socket", sizeof(un.sun_path)-1);
-    res = ::bind(listener, (struct sockaddr*)&un, sizeof(un));
-    assert( res != -1 );
-    res = ::listen(listener, 10);
-    assert( res != -1 );
-
-    //添加监听客户端请求连接事件
-    struct event* ev_listen = event_new(base_, listener, EV_READ | EV_PERSIST, accept_cb, this);
-    event_add(ev_listen, NULL);
     Connect2Udatabase(this); //初始化到udatabase的连接
 
 }
 void UDiskIO::Start() {
-    event_base_dispatch(base_);
-    event_base_free(base_);
+    if(pthread_create(&tid_, NULL, thread_func, this) < 0) {
+        cout <<  "create udisk io thread error" << strerror(errno) << endl;
+    }
 }
-void UDiskIO::accept_cb(int fd, short events, void* arg) {
+void* UDiskIO::thread_func(void* arg) {
     UDiskIO* instance = (UDiskIO*)arg;
-    int sockfd;
-    struct sockaddr_un client;
-    memset(&client, 0, sizeof(client));
-    socklen_t len=0;
-    sockfd = ::accept(fd, (struct sockaddr*)&client, &len);
-    cout << "the unix_socket client: " << client.sun_path << "connected, and the fd: "  << sockfd << endl;
-    evutil_make_socket_nonblocking(sockfd);
-    instance->qemuBev_ = bufferevent_socket_new(instance->base_, sockfd, BEV_OPT_CLOSE_ON_FREE);
-    bufferevent_setcb(instance->qemuBev_, qemu_read_cb, NULL, qemu_event_cb, (void*)instance);
-    bufferevent_enable(instance->qemuBev_, EV_READ | EV_PERSIST);
+    instance->tid_ = pthread_self();
+    event_base_dispatch(instance->base_);
+    event_base_free(instance->base_);
+    return (void*) 0;
 }
 void UDiskIO::qemu_read_cb(bufferevent* bev, void* arg)
 {

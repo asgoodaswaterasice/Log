@@ -14,6 +14,8 @@
 #include<event2/buffer.h>
 #include<event2/util.h>
 #include<map>
+#include<pthread.h>
+#include<errno.h>
 #include "manager_thread.h"
 #include "heartbeat_to_master.h"
 
@@ -34,6 +36,8 @@ private:
     static void chunk_read_cb(struct bufferevent* bev, void* arg);
     static void chunk_event_cb(struct bufferevent *bev, short events, void *arg);
 
+    static  void* thread_func(void* arg);
+    pthread_t tid_;
     struct event_base* base_;
     struct bufferevent* qemuBev_;
     struct bufferevent* udbBev_;
