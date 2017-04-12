@@ -203,6 +203,8 @@ void Log::start() {
     m_stop = false;
     int ret = pthread_create(&m_myself,NULL,log_thread,(void*)this);
     assert(0 == ret);
+    ret = pthread_detach(m_myself);
+    assert(0 == ret);
 }
 
 void Log::stop() {
